@@ -1,1 +1,194 @@
 
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#101827">
+<title>Football Analyzer</title>
+<style>
+:root {
+  --bg:#0b1220; --panel:#141f30; --panel2:#1b2a3d;
+  --text:#f3f6fc; --muted:#91a1b7; --green:#31d69b;
+  --blue:#65a9ff; --border:#28384d;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+font-family:Arial,sans-serif}
+header{padding:22px 5%;background:#111c2c;border-bottom:1px solid var(--border)}
+.logo{font-size:23px;font-weight:800}
+.logo span{color:var(--green)}
+header p{color:var(--muted);margin:7px 0 0;font-size:13px}
+main{max-width:1100px;margin:28px auto;padding:0 18px}
+h2{font-size:18px;margin:0 0 16px}
+.panel{background:var(--panel);border:1px solid var(--border);
+border-radius:15px;padding:20px;margin-bottom:18px}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+label{display:block;color:var(--muted);font-size:12px;margin-bottom:7px}
+input,select{width:100%;padding:12px;border-radius:9px;
+border:1px solid var(--border);background:#0c1727;color:white;font-size:15px}
+button{background:var(--green);color:#062018;border:0;border-radius:9px;
+padding:13px 20px;font-weight:800;cursor:pointer;margin-top:16px;width:100%}
+button:hover{filter:brightness(1.08)}
+.results{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.stat{background:var(--panel2);padding:16px;border-radius:11px;text-align:center}
+.stat strong{display:block;font-size:25px;color:var(--green);margin-top:7px}
+.stat span{font-size:12px;color:var(--muted)}
+.team-title{text-align:center;font-size:20px;font-weight:bold;margin-bottom:18px}
+.score-list{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.score{background:var(--panel2);padding:12px;border-radius:9px;text-align:center}
+.score b{display:block;font-size:18px;margin-bottom:5px}
+.score small{color:var(--muted)}
+.note{font-size:12px;color:var(--muted);line-height:1.6}
+.tag{display:inline-block;background:#173c35;color:var(--green);
+padding:6px 10px;border-radius:20px;font-size:11px;margin-bottom:12px}
+footer{text-align:center;color:var(--muted);padding:25px;font-size:12px}
+@media(max-width:600px){
+ .grid{grid-template-columns:1fr}
+ .results{grid-template-columns:1fr}
+ .score-list{grid-template-columns:repeat(2,1fr)}
+ main{margin-top:18px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">⚽ FOOTBALL <span>ANALYZER</span></div>
+  <p>Platformă de analiză statistică a meciurilor de fotbal</p>
+</header>
+
+<main>
+<section class="panel">
+  <span class="tag">VERSIUNEA 1.0 · CALCULATOR MATEMATIC</span>
+  <h2>Analiza unui meci</h2>
+  <div class="grid">
+    <div>
+      <label>Competiție</label>
+      <select id="league">
+        <option>Premier League</option>
+        <option>Bundesliga</option>
+        <option>La Liga</option>
+        <option>Serie A</option>
+        <option>Ligue 1</option>
+        <option>Champions League</option>
+        <option>Europa League</option>
+        <option>Liga 1 România</option>
+        <option>Alte competiții</option>
+      </select>
+    </div>
+    <div>
+      <label>Echipa gazdă</label>
+      <input id="home" value="Real Madrid">
+    </div>
+    <div>
+      <label>Echipa oaspete</label>
+      <input id="away" value="Barcelona">
+    </div>
+    <div>
+      <label>Goluri estimate gazde (λ)</label>
+      <input id="lh" type="number" min="0.05" max="6" step="0.05" value="1.65">
+    </div>
+    <div>
+      <label>Goluri estimate oaspeți (λ)</label>
+      <input id="la" type="number" min="0.05" max="6" step="0.05" value="1.25">
+    </div>
+  </div>
+  <button onclick="analyze()">CALCULEAZĂ ANALIZA</button>
+  <p class="note">λ reprezintă numărul mediu estimat de goluri pentru fiecare echipă. În această versiune valorile sunt introduse manual.</p>
+</section>
+
+<section class="panel" id="output">
+  <h2>Rezultatele analizei</h2>
+  <p class="note">Introdu echipele și valorile estimate, apoi apasă butonul de calcul.</p>
+</section>
+
+<section class="panel">
+  <h2>Piețe analizate</h2>
+  <div class="results">
+    <div class="stat"><span>1X2</span><strong>1 · X · 2</strong></div>
+    <div class="stat"><span>Total goluri</span><strong>Over / Under</strong></div>
+    <div class="stat"><span>Ambele marchează</span><strong>BTTS</strong></div>
+  </div>
+</section>
+</main>
+
+<footer>
+Football Analyzer · Instrument statistic experimental · Nu garantează rezultate sportive.
+</footer>
+
+<script>
+function factorial(n){
+  let r=1;
+  for(let i=2;i<=n;i++) r*=i;
+  return r;
+}
+function poisson(k,lambda){
+  return Math.exp(-lambda)*Math.pow(lambda,k)/factorial(k);
+}
+function pct(x){return (x*100).toFixed(1)+"%";}
+
+function analyze(){
+  const home=document.getElementById("home").value.trim() || "Gazde";
+  const away=document.getElementById("away").value.trim() || "Oaspeți";
+  const lh=Number(document.getElementById("lh").value);
+  const la=Number(document.getElementById("la").value);
+  const league=document.getElementById("league").value;
+
+  if(!Number.isFinite(lh)||!Number.isFinite(la)||lh<=0||la<=0||lh>6||la>6){
+    alert("Introdu valori λ mai mari decât 0 și cel mult 6.");
+    return;
+  }
+
+  let p1=0,px=0,p2=0,over15=0,over25=0,over35=0,btts=0;
+  let scores=[];
+  for(let h=0;h<=10;h++){
+    for(let a=0;a<=10;a++){
+      const p=poisson(h,lh)*poisson(a,la);
+      if(h>a)p1+=p;
+      else if(h===a)px+=p;
+      else p2+=p;
+      if(h+a>=2)over15+=p;
+      if(h+a>=3)over25+=p;
+      if(h+a>=4)over35+=p;
+      if(h>0&&a>0)btts+=p;
+      scores.push({h,a,p});
+    }
+  }
+  scores.sort((x,y)=>y.p-x.p);
+  const top=scores.slice(0,6);
+  const total=p1+px+p2;
+
+  document.getElementById("output").innerHTML=`
+    <h2>Rezultate: ${home} – ${away}</h2>
+    <p class="note">${league} · Model Poisson independent · Probabilități calculate</p>
+    <div class="results">
+      <div class="stat"><span>Victorie ${home}</span><strong>${pct(p1)}</strong></div>
+      <div class="stat"><span>Egal</span><strong>${pct(px)}</strong></div>
+      <div class="stat"><span>Victorie ${away}</span><strong>${pct(p2)}</strong></div>
+    </div>
+    <h2 style="margin-top:24px">Total goluri</h2>
+    <div class="results">
+      <div class="stat"><span>Peste 1.5</span><strong>${pct(over15)}</strong></div>
+      <div class="stat"><span>Peste 2.5</span><strong>${pct(over25)}</strong></div>
+      <div class="stat"><span>Peste 3.5</span><strong>${pct(over35)}</strong></div>
+    </div>
+    <h2 style="margin-top:24px">Ambele echipe marchează</h2>
+    <div class="results">
+      <div class="stat"><span>BTTS – DA</span><strong>${pct(btts)}</strong></div>
+      <div class="stat"><span>BTTS – NU</span><strong>${pct(1-btts)}</strong></div>
+      <div class="stat"><span>Total 1X2</span><strong>${pct(total)}</strong></div>
+    </div>
+    <h2 style="margin-top:24px">Cele mai probabile scoruri</h2>
+    <div class="score-list">
+      ${top.map(s=>`<div class="score"><b>${s.h} – ${s.a}</b><small>${pct(s.p)}</small></div>`).join("")}
+    </div>
+    <p class="note" style="margin-top:18px">
+      Modelul folosește distribuția Poisson independentă. Probabilitățile scorurilor afișate sunt calculate pe intervalul 0–10 goluri pentru fiecare echipă; există o probabilitate reziduală foarte mică în afara acestui interval.
+      Aceste rezultate nu sunt predicții validate și depind de calitatea valorilor λ introduse.
+    </p>
+  `;
+}
+analyze();
+</script>
+</body>
+</html>
